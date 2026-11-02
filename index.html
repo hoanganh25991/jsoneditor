@@ -5,8 +5,8 @@
   <meta charset="UTF-8" />
   <title>Local JSON Formatter</title>
 
-  <!-- JSONEditor CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsoneditor@latest/dist/jsoneditor.min.css" />
+  <!-- JSONEditor CSS (bundled locally: works offline, straight from file://) -->
+  <link rel="stylesheet" href="vendor/jsoneditor.min.css" />
 
   <style>
     body {
@@ -98,33 +98,46 @@
     </div>
   </div>
 
-  <!-- JSONEditor JS -->
-  <script src="https://cdn.jsdelivr.net/npm/jsoneditor@latest/dist/jsoneditor.min.js"></script>
+  <!-- JSONEditor JS (bundled locally: works offline, straight from file://) -->
+  <script src="vendor/jsoneditor.min.js"></script>
 
   <script>
+    if (typeof JSONEditor === "undefined") {
+      document.body.innerHTML =
+        '<p style="padding:16px;font-family:Arial,sans-serif">' +
+        "Could not load <code>vendor/jsoneditor.min.js</code>. " +
+        "Keep the <code>vendor/</code> folder next to <code>index.html</code>.</p>";
+      throw new Error("jsoneditor library not loaded");
+    }
+
     const leftContainer = document.getElementById("editor-left");
     const rightContainer = document.getElementById("editor-right");
 
+    // Push valid JSON from the code pane into the tree pane.
+    function syncToTree(jsonText) {
+      try {
+        const parsed = JSON.parse(jsonText);
+        rightEditor.set(parsed);
+      } catch (e) {
+        // ignore invalid JSON while typing
+      }
+    }
+
     const leftEditor = new JSONEditor(leftContainer, {
       mode: "code",
-      onChangeText: function (jsonText) {
-        try {
-          const parsed = JSON.parse(jsonText);
-          rightEditor.set(parsed);
-        } catch (e) {
-          // ignore invalid JSON while typing
-        }
-      }
+      onChangeText: syncToTree
     });
 
     const rightEditor = new JSONEditor(rightContainer, {
       mode: "tree"
     });
 
-    // Optional: starter JSON
-    leftEditor.setText(`{
+    // Starter JSON. setText does not fire onChangeText, so sync explicitly.
+    const starter = `{
   "hello": "paste JSON here"
-}`);
+}`;
+    leftEditor.setText(starter);
+    syncToTree(starter);
   </script>
 
 </body>
